@@ -13,29 +13,69 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: check PR description for AI co-author pattern
+    - name: install git
+      shell: bash
+      run: |
+        sudo apt-get install -y -q git
+    - name: install golang
+      uses: actions/setup-go@v3
+      with:
+        go-version: ^1.19
+    - name: check AI co-author pattern in PR and commits
+      id: check-ai-coauthor
       shell: bash
       run: |
         BLOCKED_PATTERN='Co-authored-by:.*ai|Co-authored-by:.*agent|Co-authored-by:.*copilot|Co-authored-by:.*llm|Co-authored-by:.*gpt'
+        FAIL_REASON=""
+        
         PR_BODY="${{ github.event.pull_request.body }}"
-        echo "Checking PR description..."
+        echo "Checking PR description for AI co-author pattern..."
         if echo "${PR_BODY}" | grep -Eiq "${BLOCKED_PATTERN}"; then
-          echo "FAIL: PR description contains blocked co-author AI pattern." >&2
-          echo "Blocked pattern: ${BLOCKED_PATTERN}" >&2
-          echo "Please remove AI-generated co-author lines from PR description." >&2
-          exit 1
+          FAIL_REASON="PR description contains blocked AI co-author pattern (e.g., Co-authored-by: AI, Agent, Copilot, LLM, GPT)"
         fi
-        echo "PASS: PR description does not contain blocked AI co-author pattern."
-    - name: check commit messages for AI co-author pattern
+        
+        if [[ -z "${FAIL_REASON}" ]]; then
+          cd $GITHUB_WORKSPACE
+          echo "Checking commit messages for AI co-author pattern..."
+          COMMIT_MSGS=$(git log --format=%B ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} 2>/dev/null || true)
+          if [[ -n "${COMMIT_MSGS}" ]] && echo "${COMMIT_MSGS}" | grep -Eiq "${BLOCKED_PATTERN}"; then
+            FAIL_REASON="Commit messages contain blocked AI co-author pattern (e.g., Co-authored-by: AI, Agent, Copilot, LLM, GPT)"
+          fi
+        fi
+        
+        if [[ -n "${FAIL_REASON}" ]]; then
+          echo "::warning::${FAIL_REASON}"
+          echo "FAIL_REASON=${FAIL_REASON}" >> $GITHUB_OUTPUT
+          
+          COMMENT_BODY="## ❌ AI Co-author Check Failed
+
+${FAIL_REASON}
+
+Please remove AI-generated co-author lines from your PR description or commit messages.
+
+**Blocked patterns:**
+- Co-authored-by: ... AI ...
+- Co-authored-by: ... Agent ...
+- Co-authored-by: ... Copilot ...
+- Co-authored-by: ... LLM ...
+- Co-authored-by: ... GPT ..."
+
+          curl -s -X POST "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -H "Authorization: Bearer ${{ inputs.github_token || github.token }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d "{\"body\": \"${COMMENT_BODY}\"}"
+        else
+          echo "PASS: No AI co-author pattern detected."
+        fi
+    - name: run commitlint
       shell: bash
       run: |
-        BLOCKED_PATTERN='Co-authored-by:.*ai|Co-authored-by:.*agent|Co-authored-by:.*copilot|Co-authored-by:.*llm|Co-authored-by:.*gpt'
-        cd $GITHUB_WORKSPACE
-        echo "Checking commit messages..."
-        COMMIT_MSGS=$(git log --format=%B ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} 2>/dev/null || true)
-        if [[ -n "${COMMIT_MSGS}" ]] && echo "${COMMIT_MSGS}" | grep -Eiq "${BLOCKED_PATTERN}"; then
-          echo "FAIL: Commit messages contain blocked co-author AI pattern." >&2
-          echo "Blocked pattern: ${BLOCKED_PATTERN}" >&2
+        cd $GITHUB_ACTION_PATH
+        go run ./conventionalcommits-checker/ -repo-dir $GITHUB_WORKSPACE -base-sha ${{ github.event.pull_request.base.sha }} -head-sha ${{ github.event.pull_request.head.sha }}
+    - name: fail if AI co-author detected
+      shell: bash
+      run: |
+        if [[ -n "${{ steps.check-ai-coauthor.outputs.FAIL_REASON }}" ]]; then
+          echo "::error::AI co-author check failed - see comment for details"
           exit 1
         fi
-        echo "PASS: Commit messages do not contain blocked AI co-author pattern."
