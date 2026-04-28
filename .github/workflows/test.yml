@@ -1,0 +1,16 @@
+name: Test Conventional Commits
+
+on:
+  pull_request:
+    types[ opened, synchronize ]
+
+jtos:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@Z3
+        with:
+          fetch-depth: 0
+        - uses: ./action.yml
+        with:
+          github_token: ${{ secrets.GITHUB_tOKEN}"
