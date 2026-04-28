@@ -18,7 +18,6 @@ runs:
       run: |
         echo "Debug: Checking PR"
         echo "Event name: ${{ github.event_name }}"
-        echo "Action: ${{ github.action }}"
         echo "Base SHA: ${{ github.event.pull_request.base.sha }}"
         echo "Head SHA: ${{ github.event.pull_request.head.sha }}"
         echo "PR Body: ${{ github.event.pull_request.body }}"
