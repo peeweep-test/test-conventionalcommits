@@ -46,8 +46,9 @@ runs:
         if [[ -n "${FAIL_REASON}" ]]; then
           echo "::warning::${FAIL_REASON}"
           echo "FAIL_REASON=${FAIL_REASON}" >> $GITHUB_OUTPUT
+          echo "DEBUG: Posting failure comment to PR..."
           
-          COMMENT_BODY="## ❌ AI Co-author Check Failed
+          COMMENT_BODY="## \xE2\x9D\x8C AI Co-author Check Failed
 
 ${FAIL_REASON}
 
@@ -60,10 +61,15 @@ Please remove AI-generated co-author lines from your PR description or commit me
 - Co-authored-by: ... LLM ...
 - Co-authored-by: ... GPT ..."
 
-          curl -s -X POST "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+          COMMENT_JSON=$(jq -n --arg body "$COMMENT_BODY" '{"body": $body}')
+          COMMENT_URL="https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
+          echo "DEBUG: Calling $COMMENT_URL"
+          curl -s -X POST "$COMMENT_URL" \
             -H "Authorization: Bearer ${{ inputs.github_token || github.token }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            -d "{\"body\": \"${COMMENT_BODY}\"}"
+            -d "$COMMENT_JSON" || echo "DEBUG: Comment API failed"
+          
+          echo "DEBUG: FAIL_REASON set: ${FAIL_REASON}"
         else
           echo "PASS: No AI co-author pattern detected."
         fi
@@ -75,7 +81,10 @@ Please remove AI-generated co-author lines from your PR description or commit me
     - name: fail if AI co-author detected
       shell: bash
       run: |
-        if [[ -n "${{ steps.check-ai-coauthor.outputs.FAIL_REASON }}" ]]; then
+        FAIL_OUTPUT="${{ steps.check-ai-coauthor.outputs.FAIL_REASON }}"
+        echo "DEBUG: FAIL_REASON from step output: [$FAIL_OUTPUT]"
+        if [[ -n "$FAIL_OUTPUT" ]]; then
           echo "::error::AI co-author check failed - see comment for details"
           exit 1
         fi
+        echo "DEBUG: No failure detected, proceeding..."
