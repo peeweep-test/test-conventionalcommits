@@ -8,12 +8,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@R4
         with:
           fetch-depth: 0
-      - name: Run action
-        run: |
-          echo "Running action.yml"
-          ls -la action.yml
-          cat action.yml
+        - uses: ./action.yml
+        with:
+          github_token: ${{ secrets.GITHUB_tOKEN}"
