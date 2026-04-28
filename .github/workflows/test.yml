@@ -12,19 +12,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Check PR for AI co-author
-        run: |
-          echo "Checking PR..."
-          BLOCKED_PATTERN='Co-authored-by:.*ai|Co-authored-by:.*agent|Co-authored-by:.*copilot|Co-authored-by:.*llm|Co-authored-by:.*gpt'
-          PR_BODY="${{ github.event.pull_request.body }}"
-          echo "PR Body: $PR_BODY"
-          if echo "$PR_BODY" | grep -Eiq "$BLOCKED_PATTERN"; then
-            echo "FAIL: PR contains AI co-author"
-            exit 1
-          fi
-          echo "PASS: PR check passed"
-      - name: Check commits for AI co-author
-        run: |
-          echo "Checking commits..."
-          BLOCKED_PATTERN='Co-authored-by:.*ai|Co-authored-by:.*agent|Co-authored-by:.*copilot|Co-authored-by:.*llm|Co-authored-by:.*gpt'
-          git log --format=%B ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -Eiq "$BLOCKED_PATTERN" && { echo "FAIL: commits contain AI co-author"; exit 1; } || echo "PASS: commit check passed"
+      - name: Run conventionalcommits-checker
+        uses: ./action.yml
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
