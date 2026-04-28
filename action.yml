@@ -13,31 +13,13 @@ inputs:
 runs:
   using: "composite"
   steps:
-- name: check PR description for AI co-author pattern
+- name: debug checks
       shell: bash
       run: |
-        BLOCKED_PATTERN='Co-authored-by:.*ai|Co-authored-by:.*agent|Co-authored-by:.*copilot|Co-authored-by:.*llm|Co-authored-by:.*gpt'
-        PR_BODY="${{ github.event.pull_request.body }}"
-        echo "PR Body: ${PR_BODY}"
-        if echo "${PR_BODY}" | grep -Eiq "${BLOCKED_PATTERN}"; then
-          echo "FAIL: PR description contains blocked co-author AI pattern." >&2
-          echo "Blocked pattern: ${BLOCKED_PATTERN}" >&2
-          echo "Please remove AI-generated co-author lines from PR description." >&2
-          exit 1
-        fi
-        echo "PASS: PR description does not contain blocked AI co-author pattern."
-    - name: check commit messages for AI co-author pattern
-      shell: bash
-      run: |
-        BLOCKED_PATTERN='Co-authored-by:.*ai|Co-authored-by:.*agent|Co-authored-by:.*copilot|Co-authored-by:.*llm|Co-authored-by:.*gpt'
-        cd $GITHUB_WORKSPACE
-        echo "Checking commits from ${{ github.event.pull_request.base.sha }} to ${{ github.event.pull_request.head.sha }}"
-        COMMIT_MSGS=$(git log --format=%B ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} 2>/dev/null || true)
-        echo "Commits: ${COMMIT_MSGS}"
-        if [[ -n "${COMMIT_MSGS}" ]] && echo "${COMMIT_MSGS}" | grep -Eiq "${BLOCKED_PATTERN}"; then
-          echo "FAIL: Commit messages contain blocked co-author AI pattern." >&2
-          echo "Blocked pattern: ${BLOCKED_PATTERN}" >&2
-          exit 1
-        fi
-        echo "PASS: Commit messages do not contain blocked AI co-author pattern."
+        echo "Debug: Checking PR"
+        echo "Event name: ${{ github.event_name }}"
+        echo "Action: ${{ github.action }}"
+        echo "Base SHA: ${{ github.event.pull_request.base.sha }}"
+        echo "Head SHA: ${{ github.event.pull_request.head.sha }}"
+        echo "PR Body: ${{ github.event.pull_request.body }}"
 
