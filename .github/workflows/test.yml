@@ -8,9 +8,13 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ./action.yml
+      - name: Install git
+        run: sudo apt-get update && sudo apt-get install -y git
+      - name: Run action
+        uses: ./action.yml
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
