@@ -4,7 +4,7 @@ author: BLumia
 branding:
   icon: "check"
   color: "black"
-description: "check commits insider a Pull Request and see if it matches Conventional Commits guideline"
+description: "check commits inside a Pull Request and see if it matches Conventional Commits guideline"
 inputs:
   github_token:
     description: "action github token"
@@ -13,7 +13,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-- name: debug checks
+    - name: debug checks
       shell: bash
       run: |
         echo "Debug: Checking PR"
@@ -22,4 +22,3 @@ runs:
         echo "Base SHA: ${{ github.event.pull_request.base.sha }}"
         echo "Head SHA: ${{ github.event.pull_request.head.sha }}"
         echo "PR Body: ${{ github.event.pull_request.body }}"
-
