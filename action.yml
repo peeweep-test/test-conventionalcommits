@@ -54,31 +54,22 @@ runs:
       run: |
         cd $GITHUB_ACTION_PATH
         go run ./conventionalcommits-checker/ -repo-dir $GITHUB_WORKSPACE -base-sha ${{ github.event.pull_request.base.sha }} -head-sha ${{ github.event.pull_request.head.sha }}
-    - name: fail if AI co-author detected
+    - name: fails if AI co-author detected
       shell: bash
       run: |
         FAIL_OUTPUT="${{ steps.check-ai-coauthor.outputs.FAIL_REASON }}"
         if [[ -n "$FAIL_OUTPUT" ]]; then
           echo "::error::AI co-author check failed"
-          
           COMMENT_BODY="## AI Co-author Check Failed
 
 ${FAIL_OUTPUT}
 
-Please remove AI-generated co-author lines from your PR description or commit messages.
-
-**Blocked patterns:**
-- Co-authored-by: ... AI ...
-- Co-authored-by: ... Agent ...
-- Co-authored-by: ... Copilot ...
-- Co-authored-by: ... LLM ...
-- Co-authored-by: ... GPT ..."
-
-          COMMENT_JSON=$(jq -n --arg body "$COMMENT_BODY" '{"body": $body}')
+Please remove AI-generated co-author lines from your PR description or commit messages."
+          
           curl -s -X POST "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
             -H "Authorization: Bearer ${{ inputs.github_token || github.token }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            -d "$COMMENT_JSON"
+            -d "{\"body\": \"$COMMENT_BODY\"}"
           
           exit 1
         fi
