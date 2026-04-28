@@ -16,7 +16,7 @@ runs:
     - name: install git
       shell: bash
       run: |
-        sudo apt-get install -y -q git
+        sudo apt-get install -y -q git jq
     - name: install golang
       uses: actions/setup-go@v3
       with:
