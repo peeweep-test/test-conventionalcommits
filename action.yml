@@ -13,11 +13,12 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: check PR description for AI co-author pattern
+- name: check PR description for AI co-author pattern
       shell: bash
       run: |
         BLOCKED_PATTERN='Co-authored-by:.*ai|Co-authored-by:.*agent|Co-authored-by:.*copilot|Co-authored-by:.*llm|Co-authored-by:.*gpt'
         PR_BODY="${{ github.event.pull_request.body }}"
+        echo "PR Body: ${PR_BODY}"
         if echo "${PR_BODY}" | grep -Eiq "${BLOCKED_PATTERN}"; then
           echo "FAIL: PR description contains blocked co-author AI pattern." >&2
           echo "Blocked pattern: ${BLOCKED_PATTERN}" >&2
@@ -29,8 +30,10 @@ runs:
       shell: bash
       run: |
         BLOCKED_PATTERN='Co-authored-by:.*ai|Co-authored-by:.*agent|Co-authored-by:.*copilot|Co-authored-by:.*llm|Co-authored-by:.*gpt'
-        cd $GITHUB_ACTION_PATH
+        cd $GITHUB_WORKSPACE
+        echo "Checking commits from ${{ github.event.pull_request.base.sha }} to ${{ github.event.pull_request.head.sha }}"
         COMMIT_MSGS=$(git log --format=%B ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} 2>/dev/null || true)
+        echo "Commits: ${COMMIT_MSGS}"
         if [[ -n "${COMMIT_MSGS}" ]] && echo "${COMMIT_MSGS}" | grep -Eiq "${BLOCKED_PATTERN}"; then
           echo "FAIL: Commit messages contain blocked co-author AI pattern." >&2
           echo "Blocked pattern: ${BLOCKED_PATTERN}" >&2
