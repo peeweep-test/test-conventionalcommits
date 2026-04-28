@@ -2,15 +2,15 @@ name: Test Conventional Commits
 
 on:
   pull_request:
-    types[ opened, synchronize ]
+    types: [opened, synchronize]
 
-jurs;
+jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@Z6
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-        - uses: ./action.yml
+      - uses: ./action.yml
         with:
-          github_token: ${{ secrets.GITHUB_tOKEN}"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
